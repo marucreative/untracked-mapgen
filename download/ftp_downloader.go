@@ -3,7 +3,7 @@ package download
 import (
 	"fmt"
 	"github.com/jlaffaye/ftp"
-	"github.com/marucreative/mapgen2/util"
+	"github.com/marucreative/untracked-mapgen/util"
 	"io"
 	"os"
 	"regexp"

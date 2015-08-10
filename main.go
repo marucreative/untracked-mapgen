@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/marucreative/mapgen2/download"
+	"github.com/marucreative/untracked-mapgen/download"
 	"sync"
 )
 
