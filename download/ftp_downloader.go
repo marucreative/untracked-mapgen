@@ -48,8 +48,8 @@ func (f FtpDownloader) Scan(threads int, matcher *regexp.Regexp) {
 	// Scan for and download proper files
 	// Note that this server doesn't like parallel downloads
 	p := util.NewPool(threads)
-	var i uint64
 	var wg sync.WaitGroup
+	var i uint64
 	entries, err := f.conn.List(".")
 	if err != nil {
 		panic(err)
@@ -58,12 +58,12 @@ func (f FtpDownloader) Scan(threads int, matcher *regexp.Regexp) {
 	for _, entry := range entries {
 		if matcher.MatchString(entry.Name) {
 			wg.Add(1)
-			x := p.Borrow()
-			go func() {
+			go func(entry *ftp.Entry) {
+				x := p.Borrow()
 				f.Download(entry)
 				p.Return(x)
 				wg.Done()
-			}()
+			}(entry)
 			i += entry.Size
 		}
 	}

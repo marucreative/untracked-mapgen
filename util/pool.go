@@ -19,7 +19,8 @@ func NewPool(max int) *Pool {
 
 // Borrow a Client from the pool.
 func (p *Pool) Borrow() string {
-	return <-p.pool
+	x := <-p.pool
+	return x
 }
 
 // Return returns a Client to the pool.

@@ -4,11 +4,13 @@ import (
 	"archive/zip"
 	"bytes"
 	"fmt"
+	"github.com/marucreative/untracked-mapgen/util"
 	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"strings"
+	"sync"
 )
 
 const precision = "13"
@@ -24,13 +26,13 @@ func (n Ned) imageName(fileinfo os.FileInfo) string {
 	return strings.Replace(src, ".zip", "_"+precision+".img", 1)
 }
 
-func (n Ned) extractImage(fileinfo os.FileInfo) {
+func (n Ned) extractImage(fileinfo os.FileInfo) bool {
 	// read file into memory
 	fmt.Println("\t", "reading file", fileinfo.Name())
 	b, err := ioutil.ReadFile(basePath + fileinfo.Name())
 	if err != nil {
 		fmt.Printf("ERROR:\n%v", err)
-		return
+		return false
 	}
 	reader := bytes.NewReader(b)
 
@@ -38,7 +40,7 @@ func (n Ned) extractImage(fileinfo os.FileInfo) {
 	r, err := zip.NewReader(reader, fileinfo.Size())
 	if err != nil {
 		fmt.Printf("ERROR:\n%v", err)
-		return
+		return false
 	}
 
 	// find the .img file
@@ -50,19 +52,20 @@ func (n Ned) extractImage(fileinfo os.FileInfo) {
 			dst, err := os.Create(extractTo + zfile.Name)
 			if err != nil {
 				fmt.Printf("ERROR:\n%v", err)
-				continue
+				return false
 			}
 			defer dst.Close()
 			src, err := zfile.Open()
 			if err != nil {
 				fmt.Printf("ERROR:\n%v", err)
-				continue
+				return false
 			}
 			defer src.Close()
 
 			io.Copy(dst, src)
 		}
 	}
+	return true
 }
 
 func (n Ned) process(fileinfo os.FileInfo) {
@@ -87,7 +90,7 @@ func (n Ned) process(fileinfo os.FileInfo) {
 
 func (n Ned) cleanup(fileinfo os.FileInfo) {
 	if err := os.Remove(n.imageName(fileinfo)); err != nil {
-		panic(err)
+		fmt.Println("ERROR:", err)
 	}
 }
 
@@ -100,12 +103,22 @@ func (n Ned) Run() {
 		panic(err)
 	}
 
+	var wg sync.WaitGroup
+	p := util.NewPool(3)
 	for _, fileinfo := range files {
 		if !strings.Contains(fileinfo.Name(), ".zip") {
 			continue
 		}
-		n.extractImage(fileinfo)
-		n.process(fileinfo)
-		n.cleanup(fileinfo)
+		wg.Add(1)
+		go func(fileinfo os.FileInfo) {
+			x := p.Borrow()
+			if n.extractImage(fileinfo) {
+				n.process(fileinfo)
+				n.cleanup(fileinfo)
+			}
+			p.Return(x)
+			wg.Done()
+		}(fileinfo)
 	}
+	wg.Wait()
 }
