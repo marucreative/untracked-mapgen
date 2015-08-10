@@ -1,20 +1,38 @@
 package main
 
 import (
-	// "github.com/marucreative/untracked-mapgen/download"
+	"flag"
+	"github.com/marucreative/untracked-mapgen/download"
 	"github.com/marucreative/untracked-mapgen/prepare"
-	// "sync"
+	"sync"
 )
 
-func main() {
-	// var wg sync.WaitGroup
+var cmd string
 
-	// wg.Add(2)
+func dld() {
+	var wg sync.WaitGroup
 
-	// go func() { download.Nhd(); wg.Done() }()
-	// go func() { download.Ned(); wg.Done() }()
+	wg.Add(2)
 
-	// wg.Wait()
+	go func() { download.Nhd(); wg.Done() }()
+	go func() { download.Ned(); wg.Done() }()
 
+	wg.Wait()
+}
+
+func proc() {
 	prepare.Ned{}.Run()
+}
+
+func main() {
+	flag.Parse()
+	cmd := flag.Args()[0]
+	switch cmd {
+	case "download":
+		dld()
+	case "process":
+		proc()
+	default:
+		dld()
+	}
 }
