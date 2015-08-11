@@ -72,20 +72,28 @@ func (n Ned) process(fileinfo os.FileInfo) {
 	src := n.imageName(fileinfo)
 	dest := outputTo + fileinfo.Name()
 
+	fmt.Println("\t\t converting image to tif")
+	tif := strings.Replace(src, ".img", "_raw.tif", 1)
+	exec.Command("gdal_translate", "-of", "GTiff", src, tif).Run()
+
+	fmt.Println("\t\t converting to mercator projection")
+	warped := strings.Replace(src, ".img", ".tif", 1)
+	exec.Command("gdalwarp", "-t_srs", "EPSG:3857", "-r", "bilinear", tif, warped).Run()
+
+	// Use the tif file, not the img
+	src = strings.Replace(src, ".img", ".tif", 1)
+
 	fmt.Println("\t\t color relief")
 	color := strings.Replace(dest, ".zip", "_color.tif", 1)
-	cmd := exec.Command("gdaldem", "color-relief", src, colorDefinitions, color)
-	cmd.Run()
+	exec.Command("gdaldem", "color-relief", src, colorDefinitions, color).Run()
 
 	fmt.Println("\t\t hillshade")
 	hillshade := strings.Replace(dest, ".zip", "_hillshade.tif", 1)
-	cmd = exec.Command("gdaldem", "hillshade", src, hillshade, "-z", "5", "-s", "111120")
-	cmd.Run()
+	exec.Command("gdaldem", "hillshade", src, hillshade, "-z", "5").Run() //, "-s", "111120")
 
 	fmt.Println("\t\t contour")
 	contour := strings.Replace(dest, ".zip", "_contour_50ft.shp", 1)
-	cmd = exec.Command("gdal_contour", src, contour, "-a", "height", "-i", "15.24")
-	cmd.Run()
+	exec.Command("gdal_contour", src, contour, "-a", "height", "-i", "15.24").Run()
 }
 
 func (n Ned) cleanup(fileinfo os.FileInfo) {

@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"github.com/marucreative/untracked-mapgen/download"
+	"github.com/marucreative/untracked-mapgen/postgis"
 	"github.com/marucreative/untracked-mapgen/prepare"
 	"sync"
 )
@@ -18,8 +19,12 @@ func dld() {
 	wg.Wait()
 }
 
-func proc() {
+func prep() {
 	prepare.Ned{}.Run()
+}
+
+func pg() {
+	postgis.Ned()
 }
 
 func main() {
@@ -28,8 +33,10 @@ func main() {
 	switch cmd {
 	case "download":
 		dld()
-	case "process":
-		proc()
+	case "prepare":
+		prep()
+	case "postgis":
+		pg()
 	default:
 		dld()
 	}
